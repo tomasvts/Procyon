@@ -44,10 +44,9 @@ class Procyon {
     }
   }
 
-    close() {
-        return this.#client.disconnect();
-    }
-
+  close() {
+    return this.#client.quit();
+  }
 
   /* Input */
 

@@ -23,8 +23,7 @@ class Procyon {
         className: 'movie',
         numOfRecsStore: 30,
         factorLeastSimilarLeastLiked: false,
-        redisUrl: process.env.PROCYON_REDIS_URL || '127.0.0.1',
-        redisPort: process.env.PROCYON_REDIS_PORT || 6379,
+        redisUrl: process.env.PROCYON_REDIS_URL || 'redis://redis:6379',
         redisAuth: process.env.PROCYON_REDIS_AUTH || ''
     }
 
@@ -32,7 +31,7 @@ class Procyon {
 
     for(let [ key, value ] of Object.entries(config)) this.#config[key] = value
 
-    this.#client = redis.createClient(this.#config.redisPort, this.#config.redisUrl)
+    this.#client = redis.createClient({url: this.#config.redisUrl})
 
     
     this.#key = new Key(this.#config, 'user', 'item')

@@ -43,6 +43,10 @@ class Procyon {
     }
   }
 
+  client() {
+    return this.#client;
+  }
+
   close() {
     return this.#client.quit();
   }

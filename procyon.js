@@ -173,16 +173,23 @@ class Procyon {
         this.#client.sinter(user1LikedSet,user2DislikedSet, (err, results3) => {
           // retrieving a set of the users like and dislikes that they disagree on
           this.#client.sinter(user1DislikedSet,user2LikedSet, (err, results4) => {
-            // calculating the sum of the similarities minus the sum of the disagreements
-            similarity = (results1.length+results2.length-results3.length-results4.length);
-            // calculating the number of movies rated incommon
-            ratedInCommon = (results1.length+results2.length+results3.length+results4.length);
-            // calculating the the modified jaccard score. similarity / num of comparisons made incommon
-            finalJaccardScore = similarity / ratedInCommon;
-            // calling the callback function passed to jaccard with the new score
-            callback(finalJaccardScore);
+            // retrieve the length of the user1LikedSet and user2LikedSet, 
+            // to make those users with most liked items more similar (more score)
+            // and thus get more recommendations from them.
+            this.#client.scard(user1LikedSet, (err, user1LikedCount) => {
+              this.#client.scard(user2LikedSet, (err, user2LikedCount) => {
+                    // calculating the sum of the similarities minus the sum of the disagreements
+                    similarity = (results1.length+results2.length-results3.length-results4.length);
+                    // calculating the number of movies rated incommon
+                    ratedInCommon = (results1.length+results2.length+results3.length+results4.length);
+                    // calculating the the modified jaccard score. similarity / num of comparisons made incommon
+                    finalJaccardScore = (similarity / ratedInCommon) + (user2LikedCount - user1LikedCount + 1) / (user2LikedCount + user1LikedCount + 1);
+                    // calling the callback function passed to jaccard with the new score
+                    callback(finalJaccardScore);
+                  });
+                });
+            });
           });
-        });
       });
     });
   }

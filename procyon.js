@@ -606,6 +606,14 @@ class Procyon {
     });
   }
 
+  allUsers() {
+    return new Promise((resolve, reject) => {
+      const allUsersSet = this.#key.similarityZSet('*');
+      this.#client.keys(allUsersSet, (err, userIds) => {
+        resolve(userIds.map(id => id.replace(new RegExp(this.#key.similarityZSet('([^:]+)')), '$1')));
+      });
+    });
+  }
 }
 
 

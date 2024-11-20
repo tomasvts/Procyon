@@ -166,13 +166,39 @@ class Procyon {
       user2DislikedSet = this.#key.userDislikedSet(userId2);
   
     // retrieving a set of the users likes incommon
-    this.#client.sinter(user1LikedSet,user2LikedSet, (err, results1) => {
+    this.#client.sinter(user1LikedSet, user2LikedSet, (err, results1) => {
+      if (err) {
+        console.error(`Error getting likes incommon: ${err}`)
+        return callback(0)
+      }
+
       // retrieving a set of the users dislike incommon
       this.#client.sinter(user1DislikedSet,user2DislikedSet, (err, results2) => {
+        if (err) {
+          console.error(`Error getting dislikes incommon: ${err}`);
+          if (!results2) {
+            results2 = []
+          }
+        }
+
         // retrieving a set of the users like and dislikes that they disagree on
         this.#client.sinter(user1LikedSet,user2DislikedSet, (err, results3) => {
+          if (err) {
+            console.error(`Error getting likes and dislikes disagree: ${err}`)
+            if (!results3) {
+              results3 = []
+            }
+          }
+
           // retrieving a set of the users like and dislikes that they disagree on
           this.#client.sinter(user1DislikedSet,user2LikedSet, (err, results4) => {
+            if (err) {
+              console.error(`Error getting dislikes and likes disagree: ${err}`)
+              if (!results4) {
+                results4 = []
+              }
+            }
+
             // calculating the sum of the similarities minus the sum of the disagreements
             similarity = (results1.length+results2.length-results3.length-results4.length);
             // calculating the number of movies rated incommon
@@ -191,7 +217,6 @@ class Procyon {
   // against clusters of users instead of against all. every comparison will be a value between -1 and 1 representing simliarity.
   // -1 is exact opposite, 1 is exactly the same.
   #updateSimilarityFor(userId, cb) {
-      var self = this
     // turning the userId into a string. depending on the db they might send an object, in which it won't compare properly when comparing
     // to other users
     userId = String(userId);
@@ -326,9 +351,19 @@ class Procyon {
         if (setsToUnion.length > 0){
           setsToUnion.unshift(tempAllLikedSet);
           this.#client.sunionstore(setsToUnion, err =>  {
+            if (err) {
+              console.error(`Error storing union of sets: ${err}`)
+              return cb()
+            }
+
             // using the new array of all the items that were liked by people similar and disliked by people opposite, create a new set with all the
             // items that the current user hasn't already rated
             this.#client.sdiff(tempAllLikedSet, this.#key.userLikedSet(userId), this.#key.userDislikedSet(userId), (err, notYetRatedItems) => {
+              if (err) {
+                console.error(`Error getting not yet rated items: ${err}`)
+                return cb()
+              }
+
               // with the array of items that user has not yet rated, iterate through all of them and predict what the current user would rate it
               aSync.each(notYetRatedItems,
                 (itemId, callback) => {
@@ -341,18 +376,48 @@ class Procyon {
                 // using score map which is an array of what the current user would rate all the unrated items,
                 // add them to that users sorted recommended set
                 err => {
+                  if (err) {
+                    console.error(`Error predicting scores: ${err}`)
+                    return cb()
+                  }
+
                   this.#client.del(recommendedZSet, err => {
+                    if (err) {
+                      console.error(`Error deleting recommendedZSet: ${err}`)
+                      return cb()
+                    }
+
                     aSync.each(scoreMap,
                       (scorePair, callback) => {
                         this.#client.zadd(recommendedZSet, scorePair[0], scorePair[1], err => {
+                          if (err) {
+                            console.error(`Error adding items to recommendedZSet: ${err}`)
+                          }
+
                           callback();
                         });
                       },
                       // after all the additions have been made to the recommended set,
                       err => {
+                        if (err) {
+                          console.error(`Error adding items to recommendedZSet: ${err}`)
+                        }
+
                         this.#client.del(tempAllLikedSet, err => {
+                          if (err) {
+                            console.error(`Error deleting tempAllLikedSet: ${err}`)
+                          }
+
                           this.#client.zcard(recommendedZSet, (err, length) => {
+                            if (err) {
+                              console.error(`Error getting length of recommendedZSet: ${err}`)
+                            }
+
                             this.#client.zremrangebyrank(recommendedZSet, 0, length-this.#config.numOfRecsStore-1, err => {
+                              if (err) {
+                                console.error(`Error removing items from recommendedZSet: ${err}`)
+                              }
+
                               cb();
                             });
                           });

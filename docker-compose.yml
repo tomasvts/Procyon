@@ -1,0 +1,16 @@
+services:
+  test:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: npm run test
+    depends_on:
+      - redis
+    environment:
+      - PROCYON_REDIS_URL=redis://redis
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6381:6379"

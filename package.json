@@ -1,6 +1,6 @@
 {
   "name": "procyon",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A rewrite of recommendationRaccoon to better support multiple instances with different class names, cleaner code and better use of modern JavaScript language features.",
   "main": "procyon.js",
   "scripts": {
